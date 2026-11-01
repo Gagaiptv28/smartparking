@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="ka" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ჭკვიანი პარკინგის მართვის სისტემა</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0284c7',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter / Noto Sans Georgian -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Georgian:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans Georgian', sans-serif;
+        }
+        .slot-card {
+            transition: all 0.2s ease-in-out;
+        }
+        .slot-card:hover {
+            transform: translateY(-3px);
+        }
+    </style>
+</head>
+<body class="bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-full flex flex-col transition-colors duration-200">
+
+    <!-- Header / Navbar -->
+    <header class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo & Title -->
+                <div class="flex items-center gap-3">
+                    <div class="bg-brand-600 text-white p-2.5 rounded-xl shadow-md">
+                        <i class="fa-solid fa-square-p text-2xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-lg leading-tight text-slate-900 dark:text-white">SmartPark</h1>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">პარკინგის მართვის სისტემა</p>
+                    </div>
+                </div>
+
+                <!-- Right Actions -->
+                <div class="flex items-center gap-3">
+                    <!-- Dynamic Live Clock -->
+                    <div class="hidden sm:flex flex-col text-right mr-2">
+                        <span id="live-time" class="font-semibold text-sm">00:00:00</span>
+                        <span id="live-date" class="text-xs text-slate-500 dark:text-slate-400">---</span>
+                    </div>
+
+                    <!-- Theme Toggle -->
+                    <button id="theme-toggle" class="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700 transition">
+                        <i class="fa-solid fa-moon dark:hidden text-slate-600"></i>
+                        <i class="fa-solid fa-sun hidden dark:block text-amber-400"></i>
+                    </button>
+
+                    <!-- Quick Register Button -->
+                    <button onclick="openModal('park-modal')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-medium shadow-md shadow-emerald-600/20 flex items-center gap-2 transition active:scale-95">
+                        <i class="fa-solid fa-plus"></i>
+                        <span class="hidden md:inline">ახალი პარკირება</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+        <!-- Stats Dashboard -->
+        <section class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <!-- Total Slots -->
+            <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center gap-4">
+                <div class="p-3 bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 rounded-xl">
+                    <i class="fa-solid fa-border-all text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">სულ ადგილები</p>
+                    <h3 id="stat-total" class="text-2xl font-bold">20</h3>
+                </div>
+            </div>
+
+            <!-- Available Slots -->
+            <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center gap-4">
+                <div class="p-3 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 rounded-xl">
+                    <i class="fa-solid fa-circle-check text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">თავისუფალი</p>
+                    <h3 id="stat-available" class="text-2xl font-bold text-emerald-600 dark:text-emerald-400">0</h3>
+                </div>
+            </div>
+
+            <!-- Occupied Slots -->
+            <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center gap-4">
+                <div class="p-3 bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 rounded-xl">
+                    <i class="fa-solid fa-car-side text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">დაკავებული</p>
+                    <h3 id="stat-occupied" class="text-2xl font-bold text-rose-600 dark:text-rose-400">0</h3>
+                </div>
+            </div>
+
+            <!-- Total Daily Revenue -->
+            <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center gap-4">
+                <div class="p-3 bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 rounded-xl">
+                    <i class="fa-solid fa-sack-dollar text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">დღიური შემოსავალი</p>
+                    <h3 id="stat-revenue" class="text-2xl font-bold text-amber-600 dark:text-amber-400">0 ₾</h3>
+                </div>
+            </div>
+        </section>
+
+        <!-- Capacity Progress Bar -->
+        <section class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-2">
+            <div class="flex justify-between text-xs font-semibold">
+                <span class="text-slate-600 dark:text-slate-300">პარკინგის დატვირთვა</span>
+                <span id="capacity-text" class="text-brand-600 dark:text-brand-400">0%</span>
+            </div>
+            <div class="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-3 overflow-hidden flex">
+                <div id="bar-occupied" class="bg-rose-500 h-full transition-all duration-300" style="width: 0%"></div>
+                <div id="bar-reserved" class="bg-amber-500 h-full transition-all duration-300" style="width: 0%"></div>
+                <div id="bar-vip" class="bg-indigo-500 h-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+            <div class="flex gap-4 text-xs text-slate-500 dark:text-slate-400 pt-1 flex-wrap">
+                <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> თავისუფალი</div>
+                <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span> დაკავებული</div>
+                <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> დაჯავშნილი</div>
+                <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span> VIP</div>
+            </div>
+        </section>
+
+        <!-- Toolbar: Filters & Controls -->
+        <section class="flex flex-col md:flex-row gap-4 justify-between items-stretch md:items-center bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+            <!-- Search input -->
+            <div class="relative flex-1 max-w-md">
+                <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                <input type="text" id="search-input" placeholder="ძებნა: ადგილი, ნომერი, მძღოლი..." class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm">
+            </div>
+
+            <!-- Filters & Reset -->
+            <div class="flex items-center gap-2 flex-wrap">
+                <select id="filter-status" class="px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    <option value="ALL">ყველა სტატუსი</option>
+                    <option value="AVAILABLE">ხელმისაწვდომი</option>
+                    <option value="OCCUPIED">დაკავებული</option>
+                    <option value="RESERVED">დაჯავშნილი</option>
+                    <option value="VIP">VIP</option>
+                </select>
+
+                <select id="filter-zone" class="px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    <option value="ALL">ყველა ზონა</option>
+                    <option value="A">ზონა A</option>
+                    <option value="B">ზონა B</option>
+                </select>
+
+                <button onclick="resetDemoData()" title="მონაცემების გადატვირთვა" class="px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-xs font-medium text-slate-600 dark:text-slate-300 flex items-center gap-1.5 transition">
+                    <i class="fa-solid fa-rotate-left"></i>
+                    <span>გადატვირთვა</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- Parking Slots Interactive Grid -->
+        <section class="space-y-4">
+            <div class="flex items-center justify-between">
+                <h2 class="text-lg font-bold flex items-center gap-2">
+                    <i class="fa-solid fa-map-location-dot text-brand-500"></i>
+                    პარკინგის რუკა (ადგილები)
+                </h2>
+                <span class="text-xs text-slate-500">დააჭირეთ ადგილს მოქმედებისთვის</span>
+            </div>
+
+            <div id="slots-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                <!-- Slots populated dynamically -->
+            </div>
+        </section>
+
+        <!-- Active Parking Logs / History Table -->
+        <section class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+            <div class="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
+                <h3 class="font-bold text-md flex items-center gap-2">
+                    <i class="fa-solid fa-list-check text-brand-500"></i>
+                    მიმდინარე აქტიური პარკირებები
+                </h3>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-sm">
+                    <thead>
+                        <tr class="bg-slate-50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700 text-xs uppercase tracking-wider">
+                            <th class="p-3.5">ადგილი</th>
+                            <th class="p-3.5">ავტომობილი / ნომერი</th>
+                            <th class="p-3.5">მძღოლი</th>
+                            <th class="p-3.5">შემოსვლის დრო</th>
+                            <th class="p-3.5">ხანგრძლივობა</th>
+                            <th class="p-3.5">მიმდინარე თანხა</th>
+                            <th class="p-3.5 text-right">მოქმედება</th>
+                        </tr>
+                    </thead>
+                    <tbody id="active-table-body" class="divide-y divide-slate-200 dark:divide-slate-700">
+                        <!-- Dynamic Rows -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 py-4 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-500 dark:text-slate-400">
+            SmartPark &copy; 2026 - პარკინგის მართვის ავტომატიზირებული სისტემა.
+        </div>
+    </footer>
+
+    <!-- MODAL 1: Park Vehicle (პარკირება / დაჯავშნა) -->
+    <div id="park-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 w-full max-w-md p-6 shadow-xl space-y-4 relative">
+            <button onclick="closeModal('park-modal')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-white">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+            <h3 class="text-lg font-bold flex items-center gap-2">
+                <i class="fa-solid fa-car text-brand-500"></i>
+                ავტომობილის პარკირება
+            </h3>
+            
+            <form id="park-form" onsubmit="handleParkSubmit(event)" class="space-y-4">
+                <!-- Slot Selection -->
+                <div>
+                    <label class="block text-xs font-semibold mb-1 text-slate-600 dark:text-slate-300">აირჩიეთ ადგილი</label>
+                    <select id="modal-slot-select" required class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        <!-- Options generated dynamically -->
+                    </select>
+                </div>
+
+                <!-- License Plate -->
+                <div>
+                    <label class="block text-xs font-semibold mb-1 text-slate-600 dark:text-slate-300">სახელმწიფო ნომერი</label>
+                    <input type="text" id="modal-plate" required placeholder="მაგ: AB-123-CD" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-sm uppercase focus:outline-none focus:ring-2 focus:ring-brand-500">
+                </div>
+
+                <!-- Driver Name & Phone -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold mb-1 text-slate-600 dark:text-slate-300">მძღოლის სახელი</label>
+                        <input type="text" id="modal-driver" placeholder="გიორგი ბ." class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold mb-1 text-slate-600 dark:text-slate-300">ტელეფონი</label>
+                        <input type="tel" id="modal-phone" placeholder="599 00 00 00" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    </div>
+                </div>
+
+                <!-- Vehicle Type & Rate -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold mb-1 text-slate-600 dark:text-slate-300">ტიპი</label>
+                        <select id="modal-vtype" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                            <option value="Sedan">სედანი (3 ₾/სთ)</option>
+                            <option value="SUV">ჯიპი (4 ₾/სთ)</option>
+                            <option value="EV">ელექტრომობილი (2.5 ₾/სთ)</option>
+                            <option value="VIP">VIP (5 ₾/სთ)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold mb-1 text-slate-600 dark:text-slate-300">მოქმედება</label>
+                        <select id="modal-action-type" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                            <option value="OCCUPIED">დაუყოვნებლივ დაყენება</option>
+                            <option value="RESERVED">დაჯავშნა</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="pt-2 flex justify-end gap-2">
+                    <button type="button" onclick="closeModal('park-modal')" class="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-700">გაუქმება</button>
+                    <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-medium shadow-md">დადასტურება</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 2: Checkout / Payment (გასვლა & გადახდა) -->
+    <div id="checkout-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 w-full max-w-md p-6 shadow-xl space-y-4 relative">
+            <button onclick="closeModal('checkout-modal')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-white">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+            <h3 class="text-lg font-bold flex items-center gap-2 text-slate-900 dark:text-white">
+                <i class="fa-solid fa-receipt text-brand-500"></i>
+                პარკინგის დასრულება & ანგარიშსწორება
+            </h3>
+
+            <div id="checkout-details" class="space-y-3 bg-slate-50 dark:bg-slate-900 p-4 rounded-xl text-sm border border-slate-200 dark:border-slate-700">
+                <!-- Calculated dynamically -->
+            </div>
+
+            <div class="flex items-center justify-between p-3 bg-amber-50 dark:bg-amber-950/40 rounded-xl border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200">
+                <span class="font-medium text-sm">გადასახდელი თანხა:</span>
+                <span id="checkout-total-price" class="text-xl font-extrabold text-amber-600 dark:text-amber-400">0.00 ₾</span>
+            </div>
+
+            <div class="pt-2 flex justify-end gap-2">
+                <button type="button" onclick="closeModal('checkout-modal')" class="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-700">დახურვა</button>
+                <button type="button" onclick="confirmCheckoutAndPrint()" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-sm font-medium shadow-md flex items-center gap-2">
+                    <i class="fa-solid fa-print"></i>
+                    <span>გადახდა & ქვითარი</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 3: Printable Receipt View -->
+    <div id="receipt-modal" class="fixed inset-0 z-50 hidden bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white text-slate-900 rounded-2xl w-full max-w-sm p-6 shadow-2xl space-y-4 relative font-mono text-xs">
+            <button onclick="closeModal('receipt-modal')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 print:hidden">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+            
+            <!-- Receipt Printable Content -->
+            <div id="receipt-content" class="space-y-3 border-b-2 border-dashed border-slate-300 pb-4">
+                <div class="text-center space-y-1">
+                    <h2 class="text-lg font-bold tracking-widest uppercase">SmartPark</h2>
+                    <p class="text-[10px] text-slate-500">შპს "ჭკვიანი პარკინგი"</p>
+                    <p class="text-[10px] text-slate-500">თბილისი, საქართველო</p>
+                </div>
+                <div class="border-t border-dashed border-slate-300 pt-2 space-y-1">
+                    <div class="flex justify-between"><span>ქვითარი #:</span> <span id="r-id" class="font-bold">---</span></div>
+                    <div class="flex justify-between"><span>თარიღი:</span> <span id="r-date">---</span></div>
+                    <div class="flex justify-between"><span>ადგილი:</span> <span id="r-slot" class="font-bold">---</span></div>
+                    <div class="flex justify-between"><span>ავტომობილი:</span> <span id="r-plate" class="font-bold">---</span></div>
+                    <div class="flex justify-between"><span>მძღოლი:</span> <span id="r-driver">---</span></div>
+                </div>
+                <div class="border-t border-dashed border-slate-300 pt-2 space-y-1">
+                    <div class="flex justify-between"><span>შემოსვლა:</span> <span id="r-in">---</span></div>
+                    <div class="flex justify-between"><span>გასვლა:</span> <span id="r-out">---</span></div>
+                    <div class="flex justify-between"><span>ხანგრძლივობა:</span> <span id="r-duration">---</span></div>
+                    <div class="flex justify-between"><span>ტარიფი:</span> <span id="r-rate">---</span></div>
+                </div>
+                <div class="border-t-2 border-dashed border-slate-400 pt-2 flex justify-between text-sm font-bold">
+                    <span>სულ გადახდილი:</span>
+                    <span id="r-total">0.00 ₾</span>
+                </div>
+                <div class="text-center pt-2 text-[10px] text-slate-500">
+                    გმადლობთ პარკინგით სარგებლობისთვის!
+                </div>
+            </div>
+
+            <!-- Receipt Actions -->
+            <div class="flex gap-2 print:hidden pt-2">
+                <button onclick="window.print()" class="flex-1 py-2 bg-slate-900 text-white rounded-xl font-sans font-medium text-xs flex items-center justify-center gap-2 hover:bg-slate-800">
+                    <i class="fa-solid fa-print"></i> ბეჭდვა
+                </button>
+                <button onclick="closeModal('receipt-modal')" class="px-4 py-2 border border-slate-300 rounded-xl font-sans font-medium text-xs hover:bg-slate-100">
+                    დახურვა
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Logic -->
+    <script>
+        // Default initial slot configurations (2 Zones: A & B)
+        const INITIAL_SLOTS = [
+            { id: 'A1', zone: 'A', status: 'AVAILABLE', isVip: false },
+            { id: 'A2', zone: 'A', status: 'OCCUPIED', plate: 'AA-100-BB', driver: 'დავით მ.', phone: '599112233', type: 'Sedan', entryTime: new Date(Date.now() - 45 * 60000).toISOString() },
+            { id: 'A3', zone: 'A', status: 'AVAILABLE', isVip: false },
+            { id: 'A4', zone: 'A', status: 'RESERVED', plate: 'GG-777-WP', driver: 'გიორგი ა.', phone: '577445566', type: 'SUV', entryTime: new Date(Date.now() - 15 * 60000).toISOString() },
+            { id: 'A5', zone: 'A', status: 'VIP', isVip: true },
+            { id: 'A6', zone: 'A', status: 'AVAILABLE', isVip: false },
+            { id: 'A7', zone: 'A', status: 'AVAILABLE', isVip: false },
+            { id: 'A8', zone: 'A', status: 'OCCUPIED', plate: 'EV-001-GREEN', driver: 'ანა წ.', phone: '555909090', type: 'EV', entryTime: new Date(Date.now() - 120 * 60000).toISOString() },
+            { id: 'A9', zone: 'A', status: 'AVAILABLE', isVip: false },
+            { id: 'A10', zone: 'A', status: 'AVAILABLE', isVip: false },
+
+            { id: 'B1', zone: 'B', status: 'VIP', isVip: true },
+            { id: 'B2', zone: 'B', status: 'AVAILABLE', isVip: false },
+            { id: 'B3', zone: 'B', status: 'AVAILABLE', isVip: false },
+            { id: 'B4', zone: 'B', status: 'OCCUPIED', plate: 'CC-333-DD', driver: 'ლაშა კ.', phone: '591223344', type: 'Sedan', entryTime: new Date(Date.now() - 90 * 60000).toISOString() },
+            { id: 'B5', zone: 'B', status: 'AVAILABLE', isVip: false },
+            { id: 'B6', zone: 'B', status: 'AVAILABLE', isVip: false },
+            { id: 'B7', zone: 'B', status: 'AVAILABLE', isVip: false },
+            { id: 'B8', zone: 'B', status: 'AVAILABLE', isVip: false },
+            { id: 'B9', zone: 'B', status: 'AVAILABLE', isVip: false },
+            { id: 'B10', zone: 'B', status: 'AVAILABLE', isVip: false },
+        ];
+
+        // Rates map (GEL per hour)
+        const HOURLY_RATES = {
+            'Sedan': 3.0,
+            'SUV': 4.0,
+            'EV': 2.5,
+            'VIP': 5.0
+        };
+
+        // Application State
+        let slots = [];
+        let totalDailyRevenue = 14.50; // Initial simulated revenue for today
+        let selectedCheckoutSlot = null;
+
+        // Initialize App
+        window.onload = function() {
+            loadFromLocalStorage();
+            initTheme();
+            startClock();
+            renderGrid();
+            renderActiveTable();
+            updateStats();
+
+            // Set up search and filter event listeners
+            document.getElementById('search-input').addEventListener('input', filterAndRender);
+            document.getElementById('filter-status').addEventListener('change', filterAndRender);
+            document.getElementById('filter-zone').addEventListener('change', filterAndRender);
+
+            // Re-render durations every 30 seconds
+            setInterval(() => {
+                renderGrid();
+                renderActiveTable();
+            }, 30000);
+        };
+
+        // Local Storage Handling
+        function loadFromLocalStorage() {
+            const savedSlots = localStorage.getItem('smartpark_slots');
+            const savedRev = localStorage.getItem('smartpark_revenue');
+            
+            if (savedSlots) {
+                try {
+                    slots = JSON.parse(savedSlots);
+                } catch (e) {
+                    slots = JSON.parse(JSON.stringify(INITIAL_SLOTS));
+                }
+            } else {
+                slots = JSON.parse(JSON.stringify(INITIAL_SLOTS));
+            }
+
+            if (savedRev) {
+                totalDailyRevenue = parseFloat(savedRev) || 0;
+            }
+        }
+
+        function saveToLocalStorage() {
+            localStorage.setItem('smartpark_slots', JSON.stringify(slots));
+            localStorage.setItem('smartpark_revenue', totalDailyRevenue.toFixed(2));
+        }
+
+        function resetDemoData() {
+            if (confirm('დარწმუნებული ხართ, რომ გსურთ საწყისი მონაცემების აღდგენა?')) {
+                localStorage.removeItem('smartpark_slots');
+                localStorage.removeItem('smartpark_revenue');
+                slots = JSON.parse(JSON.stringify(INITIAL_SLOTS));
+                totalDailyRevenue = 14.50;
+                saveToLocalStorage();
+                filterAndRender();
+                updateStats();
+            }
+        }
+
+        // Clock Display
+        function startClock() {
+            function update() {
+                const now = new Date();
+                document.getElementById('live-time').innerText = now.toLocaleTimeString('ka-GE');
+                document.getElementById('live-date').innerText = now.toLocaleDateString('ka-GE', { weekday: 'short', month: 'short', day: 'numeric' });
+            }
+            update();
+            setInterval(update, 1000);
+        }
+
+        // Theme Toggle Logic
+        function initTheme() {
+            const toggleBtn = document.getElementById('theme-toggle');
+            toggleBtn.addEventListener('click', () => {
+                document.documentElement.classList.toggle('dark');
+            });
+        }
+
+        // Modal Helpers
+        function openModal(id) {
+            document.getElementById(id).classList.remove('hidden');
+            if (id === 'park-modal') {
+                populateModalSlotsSelect();
+            }
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+
+        // Populate Slot Dropdown in Park Modal
+        function populateModalSlotsSelect(selectedSlotId = null) {
+            const select = document.getElementById('modal-slot-select');
+            select.innerHTML = '';
+
+            const availableOrReserved = slots.filter(s => s.status === 'AVAILABLE' || s.status === 'VIP' || s.id === selectedSlotId);
+            
+            if (availableOrReserved.length === 0) {
+                select.innerHTML = `<option value="">ყველა ადგილი დაკავებულია</option>`;
+                return;
+            }
+
+            availableOrReserved.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s.id;
+                opt.innerText = `ადგილი ${s.id} (${s.zone} ზონა - ${s.isVip ? 'VIP' : 'სტანდარტული'})`;
+                if (selectedSlotId && s.id === selectedSlotId) opt.selected = true;
+                select.appendChild(opt);
+            });
+        }
+
+        // Render Parking Grid Slots
+        function renderGrid(filteredSlots = null) {
+            const grid = document.getElementById('slots-grid');
+            grid.innerHTML = '';
+            const itemsToRender = filteredSlots || slots;
+
+            itemsToRender.forEach(slot => {
+                const isOccupied = slot.status === 'OCCUPIED';
+                const isReserved = slot.status === 'RESERVED';
+                const isVipAvailable = slot.status === 'VIP';
+                const isAvailable = slot.status === 'AVAILABLE';
+
+                let statusColorClass = 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-800/50 text-emerald-700 dark:text-emerald-400';
+                let statusBadge = '<span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300">თავისუფალი</span>';
+                let icon = 'fa-square-parking';
+
+                if (isOccupied) {
+                    statusColorClass = 'bg-rose-50 dark:bg-rose-950/30 border-rose-300 dark:border-rose-800/50 text-rose-700 dark:text-rose-400';
+                    statusBadge = '<span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-rose-100 dark:bg-rose-900/60 text-rose-800 dark:text-rose-300">დაკავებული</span>';
+                    icon = 'fa-car-side';
+                } else if (isReserved) {
+                    statusColorClass = 'bg-amber-50 dark:bg-amber-950/30 border-amber-300 dark:border-amber-800/50 text-amber-700 dark:text-amber-400';
+                    statusBadge = '<span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-300">დაჯავშნილი</span>';
+                    icon = 'fa-clock';
+                } else if (isVipAvailable) {
+                    statusColorClass = 'bg-indigo-50 dark:bg-indigo-950/30 border-indigo-300 dark:border-indigo-800/50 text-indigo-700 dark:text-indigo-400';
+                    statusBadge = '<span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-indigo-100 dark:bg-indigo-900/60 text-indigo-800 dark:text-indigo-300">VIP</span>';
+                    icon = 'fa-crown';
+                }
+
+                // Duration calculate if parked
+                let durationText = '';
+                if (slot.entryTime) {
+                    const mins = Math.floor((new Date() - new Date(slot.entryTime)) / 60000);
+                    durationText = `${Math.floor(mins / 60)}სთ ${mins % 60}წთ`;
+                }
+
+                const card = document.createElement('div');
+                card.className = `slot-card p-4 rounded-2xl border-2 flex flex-col justify-between h-40 cursor-pointer shadow-sm hover:shadow-md ${statusColorClass}`;
+                
+                card.onclick = () => handleSlotClick(slot);
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <span class="font-extrabold text-xl tracking-tight">${slot.id}</span>
+                        ${statusBadge}
+                    </div>
+                    
+                    <div class="my-auto text-center space-y-1">
+                        <i class="fa-solid ${icon} text-3xl"></i>
+                        ${slot.plate ? `<p class="font-mono font-bold text-sm tracking-wider uppercase">${slot.plate}</p>` : ''}
+                        ${slot.driver ? `<p class="text-[11px] opacity-80 truncate">${slot.driver}</p>` : ''}
+                    </div>
+
+                    <div class="flex justify-between items-center text-[11px] pt-1 border-t border-current/10">
+                        <span class="opacity-75">ზონა ${slot.zone}</span>
+                        ${durationText ? `<span class="font-semibold"><i class="fa-regular fa-clock"></i> ${durationText}</span>` : '<span class="opacity-60">მზადაა</span>'}
+                    </div>
+                `;
+
+                grid.appendChild(card);
+            });
+        }
+
+        // Render Active Occupied Slots Table
+        function renderActiveTable() {
+            const tbody = document.getElementById('active-table-body');
+            tbody.innerHTML = '';
+
+            const activeSlots = slots.filter(s => s.status === 'OCCUPIED' || s.status === 'RESERVED');
+
+            if (activeSlots.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="text-center p-6 text-slate-400 text-xs">
+                            ამჟამად აქტიური პარკირებები არ არის
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            activeSlots.forEach(s => {
+                const now = new Date();
+                const entry = new Date(s.entryTime);
+                const diffMins = Math.max(1, Math.floor((now - entry) / 60000));
+                const hours = Math.ceil(diffMins / 60);
+                const rate = HOURLY_RATES[s.type] || 3.0;
+                const currentFee = (hours * rate).toFixed(2);
+
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-50 dark:hover:bg-slate-700/30 transition';
+
+                tr.innerHTML = `
+                    <td class="p-3.5 font-bold">${s.id}</td>
+                    <td class="p-3.5">
+                        <span class="font-mono font-semibold bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded text-xs">${s.plate || '---'}</span>
+                        <span class="text-xs text-slate-400 block">${s.type || 'სტანდარტული'}</span>
+                    </td>
+                    <td class="p-3.5">
+                        <div>${s.driver || 'უცნობი'}</div>
+                        <div class="text-xs text-slate-400">${s.phone || ''}</div>
+                    </td>
+                    <td class="p-3.5 text-xs text-slate-500">${entry.toLocaleTimeString('ka-GE', {hour: '2-digit', minute:'2-digit'})}</td>
+                    <td class="p-3.5 text-xs"><i class="fa-regular fa-clock text-slate-400 mr-1"></i>${Math.floor(diffMins/60)}სთ ${diffMins%60}წთ</td>
+                    <td class="p-3.5 font-bold text-amber-600 dark:text-amber-400">${currentFee} ₾</td>
+                    <td class="p-3.5 text-right">
+                        <button onclick="openCheckoutModal('${s.id}')" class="px-3 py-1.5 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-xs font-medium transition shadow-sm">
+                            გასვლა / გადახდა
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Update Statistics Widgets & Progress Bar
+        function updateStats() {
+            const total = slots.length;
+            const occupied = slots.filter(s => s.status === 'OCCUPIED').length;
+            const reserved = slots.filter(s => s.status === 'RESERVED').length;
+            const vip = slots.filter(s => s.status === 'VIP').length;
+            const available = total - occupied - reserved;
+
+            document.getElementById('stat-total').innerText = total;
+            document.getElementById('stat-available').innerText = available;
+            document.getElementById('stat-occupied').innerText = occupied;
+            document.getElementById('stat-revenue').innerText = `${totalDailyRevenue.toFixed(2)} ₾`;
+
+            // Percentages
+            const occPct = (occupied / total) * 100;
+            const resPct = (reserved / total) * 100;
+            const vipPct = (vip / total) * 100;
+
+            document.getElementById('bar-occupied').style.width = `${occPct}%`;
+            document.getElementById('bar-reserved').style.width = `${resPct}%`;
+            document.getElementById('bar-vip').style.width = `${vipPct}%`;
+
+            const capacityOverall = Math.round(((occupied + reserved) / total) * 100);
+            document.getElementById('capacity-text').innerText = `${capacityOverall}% დაკავებულია`;
+        }
+
+        // Slot Quick Action Click Handler
+        function handleSlotClick(slot) {
+            if (slot.status === 'OCCUPIED' || slot.status === 'RESERVED') {
+                openCheckoutModal(slot.id);
+            } else {
+                openModal('park-modal');
+                populateModalSlotsSelect(slot.id);
+            }
+        }
+
+        // Search and Filter Handler
+        function filterAndRender() {
+            const search = document.getElementById('search-input').value.toLowerCase().trim();
+            const status = document.getElementById('filter-status').value;
+            const zone = document.getElementById('filter-zone').value;
+
+            const filtered = slots.filter(s => {
+                const matchSearch = s.id.toLowerCase().includes(search) || 
+                                    (s.plate && s.plate.toLowerCase().includes(search)) || 
+                                    (s.driver && s.driver.toLowerCase().includes(search));
+
+                const matchStatus = (status === 'ALL') || (s.status === status);
+                const matchZone = (zone === 'ALL') || (s.zone === zone);
+
+                return matchSearch && matchStatus && matchZone;
+            });
+
+            renderGrid(filtered);
+        }
+
+        // Submit New Parking Form
+        function handleParkSubmit(e) {
+            e.preventDefault();
+            const slotId = document.getElementById('modal-slot-select').value;
+            const plate = document.getElementById('modal-plate').value.toUpperCase().trim();
+            const driver = document.getElementById('modal-driver').value.trim();
+            const phone = document.getElementById('modal-phone').value.trim();
+            const vtype = document.getElementById('modal-vtype').value;
+            const actionType = document.getElementById('modal-action-type').value;
+
+            if (!slotId) return;
+
+            const slotIndex = slots.findIndex(s => s.id === slotId);
+            if (slotIndex !== -1) {
+                slots[slotIndex].status = actionType;
+                slots[slotIndex].plate = plate;
+                slots[slotIndex].driver = driver || 'უცნობი';
+                slots[slotIndex].phone = phone || '';
+                slots[slotIndex].type = vtype;
+                slots[slotIndex].entryTime = new Date().toISOString();
+
+                saveToLocalStorage();
+                filterAndRender();
+                renderActiveTable();
+                updateStats();
+                closeModal('park-modal');
+
+                // Reset form
+                document.getElementById('park-form').reset();
+            }
+        }
+
+        // Open Checkout Modal
+        function openCheckoutModal(slotId) {
+            const slot = slots.find(s => s.id === slotId);
+            if (!slot) return;
+
+            selectedCheckoutSlot = slot;
+
+            const now = new Date();
+            const entry = new Date(slot.entryTime || Date.now());
+            const diffMins = Math.max(1, Math.floor((now - entry) / 60000));
+            const hours = Math.ceil(diffMins / 60);
+            const rate = HOURLY_RATES[slot.type] || 3.0;
+            const totalFee = (hours * rate).toFixed(2);
+
+            const detailsBox = document.getElementById('checkout-details');
+            detailsBox.innerHTML = `
+                <div class="flex justify-between"><span class="text-slate-500">ადგილი:</span> <span class="font-bold">${slot.id} (${slot.zone} ზონა)</span></div>
+                <div class="flex justify-between"><span class="text-slate-500">ავტომობილი:</span> <span class="font-mono font-bold">${slot.plate || '---'}</span></div>
+                <div class="flex justify-between"><span class="text-slate-500">მძღოლი:</span> <span>${slot.driver || 'უცნობი'}</span></div>
+                <div class="flex justify-between"><span class="text-slate-500">შემოსვლის დრო:</span> <span>${entry.toLocaleTimeString('ka-GE', {hour: '2-digit', minute:'2-digit'})}</span></div>
+                <div class="flex justify-between"><span class="text-slate-500">ხანგრძლივობა:</span> <span class="font-semibold">${Math.floor(diffMins/60)} საათი ${diffMins%60} წუთი</span></div>
+                <div class="flex justify-between"><span class="text-slate-500">საათობრივი ტარიფი:</span> <span>${rate.toFixed(2)} ₾/სთ</span></div>
+            `;
+
+            document.getElementById('checkout-total-price').innerText = `${totalFee} ₾`;
+            openModal('checkout-modal');
+        }
+
+        // Confirm Checkout, update revenue, show printable receipt
+        function confirmCheckoutAndPrint() {
+            if (!selectedCheckoutSlot) return;
+
+            const slotIndex = slots.findIndex(s => s.id === selectedCheckoutSlot.id);
+            if (slotIndex === -1) return;
+
+            const slot = slots[slotIndex];
+            const now = new Date();
+            const entry = new Date(slot.entryTime || Date.now());
+            const diffMins = Math.max(1, Math.floor((now - entry) / 60000));
+            const hours = Math.ceil(diffMins / 60);
+            const rate = HOURLY_RATES[slot.type] || 3.0;
+            const totalFee = (hours * rate);
+
+            // Populate receipt data
+            document.getElementById('r-id').innerText = `REC-${Math.floor(100000 + Math.random() * 900000)}`;
+            document.getElementById('r-date').innerText = now.toLocaleDateString('ka-GE');
+            document.getElementById('r-slot').innerText = slot.id;
+            document.getElementById('r-plate').innerText = slot.plate || '---';
+            document.getElementById('r-driver').innerText = slot.driver || 'უცნობი';
+            document.getElementById('r-in').innerText = entry.toLocaleTimeString('ka-GE', {hour: '2-digit', minute:'2-digit'});
+            document.getElementById('r-out').innerText = now.toLocaleTimeString('ka-GE', {hour: '2-digit', minute:'2-digit'});
+            document.getElementById('r-duration').innerText = `${hours} სთ (${diffMins} წთ)`;
+            document.getElementById('r-rate').innerText = `${rate.toFixed(2)} ₾/სთ`;
+            document.getElementById('r-total').innerText = `${totalFee.toFixed(2)} ₾`;
+
+            // Update revenue and reset slot status
+            totalDailyRevenue += totalFee;
+
+            slots[slotIndex].status = slots[slotIndex].isVip ? 'VIP' : 'AVAILABLE';
+            delete slots[slotIndex].plate;
+            delete slots[slotIndex].driver;
+            delete slots[slotIndex].phone;
+            delete slots[slotIndex].type;
+            delete slots[slotIndex].entryTime;
+
+            saveToLocalStorage();
+            filterAndRender();
+            renderActiveTable();
+            updateStats();
+
+            closeModal('checkout-modal');
+            openModal('receipt-modal');
+            selectedCheckoutSlot = null;
+        }
+    </script>
+</body>
+</html>
